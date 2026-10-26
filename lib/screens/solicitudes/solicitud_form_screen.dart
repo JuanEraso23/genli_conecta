@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import '../../models/solucion.dart';
+import '../../services/solicitud_service.dart'; // NUEVO IMPORT
 
 class SolicitudFormScreen extends StatefulWidget {
   const SolicitudFormScreen({
@@ -20,6 +20,9 @@ class SolicitudFormScreen extends StatefulWidget {
 class _SolicitudFormScreenState
     extends State<SolicitudFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
+  // NUEVO SERVICIO
+  final SolicitudService _solicitudService = SolicitudService();
 
   final TextEditingController _organizacionController =
   TextEditingController();
@@ -51,23 +54,47 @@ class _SolicitudFormScreenState
       _cargando = true;
     });
 
-    // Simulación del registro.
-    await Future.delayed(
-      const Duration(milliseconds: 900),
-    );
+    try {
+      // LLAMADO REAL AL SERVICIO
+      final solicitud = await _solicitudService.crearSolicitud(
+        solucion: widget.solucion,
+        organizacion: _organizacionController.text,
+        ubicacion: _ubicacionController.text,
+        descripcion: _descripcionController.text,
+      );
 
-    if (!mounted) {
-      return;
+      if (!mounted) return;
+
+      setState(() {
+        _cargando = false;
+      });
+
+      // PASAMOS EL CÓDIGO REAL AL DIÁLOGO
+      await _mostrarConfirmacion(solicitud.codigo);
+
+    } on SolicitudServiceException catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _cargando = false;
+      });
+
+      // MOSTRAR ERROR EN PANTALLA
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.mensaje)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cargando = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ocurrió un error inesperado.')),
+      );
     }
-
-    setState(() {
-      _cargando = false;
-    });
-
-    await _mostrarConfirmacion();
   }
 
-  Future<void> _mostrarConfirmacion() async {
+  Future<void> _mostrarConfirmacion(String codigo) async {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -105,27 +132,27 @@ class _SolicitudFormScreenState
                   color: AppColors.verdeClaro,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Text(
+                    const Text(
                       'Código de seguimiento',
                       style: TextStyle(
                         color: AppColors.textoSecundario,
                         fontSize: 13,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     Text(
-                      'SOL-001',
-                      style: TextStyle(
+                      codigo, // ¡AQUÍ SE MUESTRA EL CÓDIGO DINÁMICO!
+                      style: const TextStyle(
                         color: AppColors.verdePrincipal,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1,
                       ),
                     ),
-                    SizedBox(height: 7),
-                    Text(
+                    const SizedBox(height: 7),
+                    const Text(
                       'Estado: Recibida',
                       style: TextStyle(
                         color: AppColors.verdeTexto,
@@ -156,7 +183,7 @@ class _SolicitudFormScreenState
 
     Navigator.popUntil(
       context,
-          (route) => route.isFirst,
+      (route) => route.isFirst,
     );
   }
 
