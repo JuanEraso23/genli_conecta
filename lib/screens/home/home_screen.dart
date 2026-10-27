@@ -1,16 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
 import '../../app/theme.dart';
-import '../../data/mock_data.dart';
 import '../../models/solucion.dart';
 import '../../widgets/solucion_card.dart';
 import '../soluciones/solucion_detail_screen.dart';
 import '../solicitudes/solicitud_form_screen.dart';
 import '../../services/auth_service.dart';
+import '../../services/solucion_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.solucionService});
+
+  /// Permite inyectar un servicio alterno en pruebas.
+  final SolucionService? solucionService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -19,33 +24,74 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _busquedaController = TextEditingController();
   final AuthService _authService = AuthService();
+  late final SolucionService _solucionService =
+      widget.solucionService ?? SolucionService();
 
-  List<Solucion> _solucionesFiltradas = MockData.soluciones;
+  StreamSubscription<List<Solucion>>? _suscripcion;
+  List<Solucion> _soluciones = const [];
+  List<Solucion> _solucionesFiltradas = const [];
+  bool _cargando = true;
+  bool _hayError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _escucharSoluciones();
+  }
 
   @override
   void dispose() {
+    _suscripcion?.cancel();
     _busquedaController.dispose();
     super.dispose();
   }
 
-  void _filtrarSoluciones(String texto) {
-    final String consulta = texto.trim().toLowerCase();
-
+  void _reintentarCarga() {
     setState(() {
-      if (consulta.isEmpty) {
-        _solucionesFiltradas = MockData.soluciones;
-        return;
-      }
+      _cargando = true;
+      _hayError = false;
+    });
 
-      _solucionesFiltradas = MockData.soluciones.where((solucion) {
-        final String nombre = solucion.nombre.toLowerCase();
-        final String categoria = solucion.categoria.toLowerCase();
-        final String descripcion = solucion.descripcion.toLowerCase();
+    _escucharSoluciones();
+  }
 
-        return nombre.contains(consulta) ||
-            categoria.contains(consulta) ||
-            descripcion.contains(consulta);
-      }).toList();
+  void _escucharSoluciones() {
+    _suscripcion?.cancel();
+
+    _suscripcion = _solucionService.observarSolucionesPublicadas().listen(
+      (soluciones) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _soluciones = soluciones;
+          _solucionesFiltradas = filtrarSoluciones(
+            soluciones,
+            _busquedaController.text,
+          );
+          _cargando = false;
+          _hayError = false;
+        });
+      },
+      onError: (Object error) {
+        debugPrint('Error al cargar soluciones: $error');
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _cargando = false;
+          _hayError = true;
+        });
+      },
+    );
+  }
+
+  void _filtrarSoluciones(String texto) {
+    setState(() {
+      _solucionesFiltradas = filtrarSoluciones(_soluciones, texto);
     });
   }
 
@@ -254,6 +300,10 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             _limpiarBusqueda();
+
+            if (_hayError) {
+              _reintentarCarga();
+            }
           },
           child: CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -269,7 +319,17 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: _SectionHeader(cantidad: _solucionesFiltradas.length),
               ),
-              if (_solucionesFiltradas.isEmpty)
+              if (_cargando)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _CargandoCatalogo(),
+                )
+              else if (_hayError)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _ErrorCatalogo(onReintentar: _reintentarCarga),
+                )
+              else if (_solucionesFiltradas.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _EmptySearch(
@@ -614,6 +674,82 @@ class _EmptySearch extends StatelessWidget {
               ),
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Ver todas las soluciones'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CargandoCatalogo extends StatelessWidget {
+  const _CargandoCatalogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppColors.verdePrincipal),
+            SizedBox(height: 16),
+            Text(
+              'Cargando soluciones...',
+              style: TextStyle(color: AppColors.textoSecundario, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCatalogo extends StatelessWidget {
+  const _ErrorCatalogo({required this.onReintentar});
+
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 430),
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              color: AppColors.error,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No fue posible cargar las soluciones',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.verdeTexto,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 9),
+            const Text(
+              'Revisa tu conexión a internet e inténtalo de nuevo.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textoSecundario,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onReintentar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reintentar'),
             ),
           ],
         ),
