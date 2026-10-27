@@ -58,7 +58,10 @@ void main() {
 
     test('busca por categoría', () {
       final resultado = filtrarSoluciones(soluciones, 'medioambiente');
-      expect(resultado.map((s) => s.nombre), contains('Reducción de emisiones'));
+      expect(
+        resultado.map((s) => s.nombre),
+        contains('Reducción de emisiones'),
+      );
     });
 
     test('busca por descripción', () {
