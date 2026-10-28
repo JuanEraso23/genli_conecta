@@ -5,10 +5,7 @@ import '../../models/solucion.dart';
 import '../solicitudes/solicitud_form_screen.dart';
 
 class SolucionDetailScreen extends StatelessWidget {
-  const SolucionDetailScreen({
-    super.key,
-    required this.solucion,
-  });
+  const SolucionDetailScreen({super.key, required this.solucion});
 
   final Solucion solucion;
 
@@ -17,9 +14,7 @@ class SolucionDetailScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) {
-          return SolicitudFormScreen(
-            solucion: solucion,
-          );
+          return SolicitudFormScreen(solucion: solucion);
         },
       ),
     );
@@ -35,36 +30,22 @@ class SolucionDetailScreen extends StatelessWidget {
           onPressed: () {
             Navigator.pop(context);
           },
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         ),
         title: const Text('Detalle de la solución'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            24,
-            20,
-            120,
-          ),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
           child: Center(
             child: Container(
-              constraints: const BoxConstraints(
-                maxWidth: 650,
-              ),
+              constraints: const BoxConstraints(maxWidth: 650),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SolutionHero(
-                    solucion: solucion,
-                  ),
+                  _SolutionHero(solucion: solucion),
                   const SizedBox(height: 22),
-                  _InformationCard(
-                    solucion: solucion,
-                  ),
+                  _InformationCard(solucion: solucion),
                   const SizedBox(height: 18),
                   const _ProcessCard(),
                 ],
@@ -75,19 +56,12 @@ class SolucionDetailScreen extends StatelessWidget {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            14,
-            20,
-            18,
-          ),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
           decoration: BoxDecoration(
             color: AppColors.blanco,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: 0.08,
-                ),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 16,
                 offset: const Offset(0, -5),
               ),
@@ -99,12 +73,8 @@ class SolucionDetailScreen extends StatelessWidget {
               onPressed: () {
                 _registrarSolicitud(context);
               },
-              icon: const Icon(
-                Icons.description_outlined,
-              ),
-              label: const Text(
-                'Registrar solicitud',
-              ),
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('Registrar solicitud'),
             ),
           ),
         ),
@@ -114,9 +84,7 @@ class SolucionDetailScreen extends StatelessWidget {
 }
 
 class _SolutionHero extends StatelessWidget {
-  const _SolutionHero({
-    required this.solucion,
-  });
+  const _SolutionHero({required this.solucion});
 
   final Solucion solucion;
 
@@ -130,9 +98,7 @@ class _SolutionHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppColors.verdePrincipal.withValues(
-              alpha: 0.18,
-            ),
+            color: AppColors.verdePrincipal.withValues(alpha: 0.18),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -145,23 +111,14 @@ class _SolutionHero extends StatelessWidget {
             width: 68,
             height: 68,
             decoration: BoxDecoration(
-              color: AppColors.blanco.withValues(
-                alpha: 0.15,
-              ),
+              color: AppColors.blanco.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(
-              solucion.icono,
-              color: solucion.color,
-              size: 38,
-            ),
+            child: Icon(solucion.icono, color: solucion.color, size: 38),
           ),
           const SizedBox(height: 22),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: solucion.color,
               borderRadius: BorderRadius.circular(30),
@@ -202,9 +159,7 @@ class _SolutionHero extends StatelessWidget {
 }
 
 class _InformationCard extends StatelessWidget {
-  const _InformationCard({
-    required this.solucion,
-  });
+  const _InformationCard({required this.solucion});
 
   final Solucion solucion;
 
@@ -216,9 +171,7 @@ class _InformationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.blanco,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordeCampo,
-        ),
+        border: Border.all(color: AppColors.bordeCampo),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +186,8 @@ class _InformationCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            _descripcionAmpliada(solucion.id),
+            'Describe la necesidad de tu organización o comunidad '
+            'relacionada con ${solucion.nombre}.',
             style: const TextStyle(
               color: AppColors.textoSecundario,
               fontSize: 15,
@@ -272,51 +226,10 @@ class _InformationCard extends StatelessWidget {
       ),
     );
   }
-
-  String _descripcionAmpliada(String id) {
-    switch (id) {
-      case 'SOL-01':
-        return 'Esta línea reúne alternativas orientadas al '
-            'aprovechamiento de fuentes renovables, como la '
-            'energía solar. El solicitante podrá describir el '
-            'contexto, la ubicación y la necesidad energética '
-            'de su organización o comunidad.';
-
-      case 'SOL-02':
-        return 'Esta línea contempla necesidades relacionadas '
-            'con el acceso, tratamiento y gestión sostenible '
-            'del agua potable. La solicitud permitirá describir '
-            'la situación y los posibles beneficiarios.';
-
-      case 'SOL-03':
-        return 'Esta línea agrupa iniciativas que integran el '
-            'bienestar comunitario y la protección del '
-            'medioambiente mediante soluciones '
-            'socioambientales.';
-
-      case 'SOL-04':
-        return 'Esta línea permite registrar necesidades '
-            'relacionadas con la formulación y gestión de '
-            'proyectos sostenibles con enfoque ambiental y '
-            'comunitario.';
-
-      case 'SOL-05':
-        return 'Esta línea permite describir necesidades '
-            'orientadas a disminuir el impacto ambiental y las '
-            'emisiones de CO₂ mediante alternativas '
-            'sostenibles.';
-
-      default:
-        return solucion.descripcion;
-    }
-  }
 }
 
 class _InformationItem extends StatelessWidget {
-  const _InformationItem({
-    required this.icon,
-    required this.text,
-  });
+  const _InformationItem({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -324,9 +237,7 @@ class _InformationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 13,
-      ),
+      padding: const EdgeInsets.only(bottom: 13),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -337,18 +248,12 @@ class _InformationItem extends StatelessWidget {
               color: AppColors.verdeClaro,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.verdePrincipal,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.verdePrincipal, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: 7,
-              ),
+              padding: const EdgeInsets.only(top: 7),
               child: Text(
                 text,
                 style: const TextStyle(
@@ -393,19 +298,18 @@ class _ProcessCard extends StatelessWidget {
             number: '1',
             title: 'Registra la necesidad',
             description:
-            'Completa el formulario con la información solicitada.',
+                'Completa el formulario con la información solicitada.',
           ),
           _ProcessStep(
             number: '2',
             title: 'Recibe un código',
             description:
-            'El sistema asigna un identificador y el estado inicial.',
+                'El sistema asigna un identificador y el estado inicial.',
           ),
           _ProcessStep(
             number: '3',
             title: 'Consulta el seguimiento',
-            description:
-            'Revisa posteriormente el estado y las observaciones.',
+            description: 'Revisa posteriormente el estado y las observaciones.',
             showLine: false,
           ),
         ],
@@ -455,9 +359,7 @@ class _ProcessStep extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 5,
-                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 5),
                     color: AppColors.verdeSecundario,
                   ),
                 ),
@@ -466,9 +368,7 @@ class _ProcessStep extends StatelessWidget {
           const SizedBox(width: 13),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 20,
-              ),
+              padding: const EdgeInsets.only(bottom: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
