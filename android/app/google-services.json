@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "414406017559",
+    "project_id": "genli-conecta-jme-2026",
+    "storage_bucket": "genli-conecta-jme-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:414406017559:android:ac7f95f68283d5a8e69252",
+        "android_client_info": {
+          "package_name": "com.example.genli_conecta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnEL10_pf6CV4wfKRqvPIAIS6kDnQ5BGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

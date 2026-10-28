@@ -1,15 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
 import '../../app/theme.dart';
-import '../../data/mock_data.dart';
 import '../../models/solucion.dart';
 import '../../widgets/solucion_card.dart';
 import '../soluciones/solucion_detail_screen.dart';
 import '../solicitudes/solicitud_form_screen.dart';
+import '../../services/auth_service.dart';
+import '../../services/solucion_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.solucionService});
+
+  /// Permite inyectar un servicio alterno en pruebas.
+  final SolucionService? solucionService;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,35 +23,75 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _busquedaController = TextEditingController();
+  final AuthService _authService = AuthService();
+  late final SolucionService _solucionService =
+      widget.solucionService ?? SolucionService();
 
-  List<Solucion> _solucionesFiltradas = MockData.soluciones;
+  StreamSubscription<List<Solucion>>? _suscripcion;
+  List<Solucion> _soluciones = const [];
+  List<Solucion> _solucionesFiltradas = const [];
+  bool _cargando = true;
+  bool _hayError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _escucharSoluciones();
+  }
 
   @override
   void dispose() {
+    _suscripcion?.cancel();
     _busquedaController.dispose();
     super.dispose();
   }
 
-  void _filtrarSoluciones(String texto) {
-    final String consulta = texto.trim().toLowerCase();
-
+  void _reintentarCarga() {
     setState(() {
-      if (consulta.isEmpty) {
-        _solucionesFiltradas = MockData.soluciones;
-        return;
-      }
+      _cargando = true;
+      _hayError = false;
+    });
 
-      _solucionesFiltradas = MockData.soluciones.where(
-            (solucion) {
-          final String nombre = solucion.nombre.toLowerCase();
-          final String categoria = solucion.categoria.toLowerCase();
-          final String descripcion = solucion.descripcion.toLowerCase();
+    _escucharSoluciones();
+  }
 
-          return nombre.contains(consulta) ||
-              categoria.contains(consulta) ||
-              descripcion.contains(consulta);
-        },
-      ).toList();
+  void _escucharSoluciones() {
+    _suscripcion?.cancel();
+
+    _suscripcion = _solucionService.observarSolucionesPublicadas().listen(
+      (soluciones) {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _soluciones = soluciones;
+          _solucionesFiltradas = filtrarSoluciones(
+            soluciones,
+            _busquedaController.text,
+          );
+          _cargando = false;
+          _hayError = false;
+        });
+      },
+      onError: (Object error) {
+        debugPrint('Error al cargar soluciones: $error');
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _cargando = false;
+          _hayError = true;
+        });
+      },
+    );
+  }
+
+  void _filtrarSoluciones(String texto) {
+    setState(() {
+      _solucionesFiltradas = filtrarSoluciones(_soluciones, texto);
     });
   }
 
@@ -60,9 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) {
-          return SolucionDetailScreen(
-            solucion: solucion,
-          );
+          return SolucionDetailScreen(solucion: solucion);
         },
       ),
     );
@@ -73,9 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (context) {
-          return SolicitudFormScreen(
-            solucion: solucion,
-          );
+          return SolicitudFormScreen(solucion: solucion);
         },
       ),
     );
@@ -84,9 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _mostrarPerfil() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'La pantalla de perfil se agregará posteriormente.',
-        ),
+        content: Text('La pantalla de perfil se agregará posteriormente.'),
       ),
     );
   }
@@ -111,10 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.verdePrincipal,
             size: 42,
           ),
-          title: const Text(
-            'Cerrar sesión',
-            textAlign: TextAlign.center,
-          ),
+          title: const Text('Cerrar sesión', textAlign: TextAlign.center),
           content: const Text(
             '¿Seguro que deseas cerrar la sesión?',
             textAlign: TextAlign.center,
@@ -142,10 +179,38 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    try {
+      await _authService.cerrarSesion();
+    } on AuthServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.mensaje)));
+
+      return;
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No fue posible cerrar la sesión.')),
+      );
+
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     Navigator.pushNamedAndRemoveUntil(
       context,
       AppRoutes.login,
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -161,15 +226,11 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             tooltip: 'Mi perfil',
             onPressed: _mostrarPerfil,
-            icon: const Icon(
-              Icons.account_circle_outlined,
-            ),
+            icon: const Icon(Icons.account_circle_outlined),
           ),
           PopupMenuButton<String>(
             tooltip: 'Más opciones',
-            icon: const Icon(
-              Icons.more_vert_rounded,
-            ),
+            icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
               switch (value) {
                 case 'solicitudes':
@@ -216,10 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: 'cerrar_sesion',
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.logout_rounded,
-                        color: AppColors.error,
-                      ),
+                      Icon(Icons.logout_rounded, color: AppColors.error),
                       SizedBox(width: 12),
                       Text('Cerrar sesión'),
                     ],
@@ -235,15 +293,17 @@ class _HomeScreenState extends State<HomeScreen> {
         child: RefreshIndicator(
           color: AppColors.verdePrincipal,
           onRefresh: () async {
-            await Future.delayed(
-              const Duration(milliseconds: 600),
-            );
+            await Future.delayed(const Duration(milliseconds: 600));
 
             if (!mounted) {
               return;
             }
 
             _limpiarBusqueda();
+
+            if (_hayError) {
+              _reintentarCarga();
+            }
           },
           child: CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -257,11 +317,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: _SectionHeader(
-                  cantidad: _solucionesFiltradas.length,
-                ),
+                child: _SectionHeader(cantidad: _solucionesFiltradas.length),
               ),
-              if (_solucionesFiltradas.isEmpty)
+              if (_cargando)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _CargandoCatalogo(),
+                )
+              else if (_hayError)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _ErrorCatalogo(onReintentar: _reintentarCarga),
+                )
+              else if (_solucionesFiltradas.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: _EmptySearch(
@@ -274,7 +342,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                   sliver: SliverLayoutBuilder(
                     builder: (context, constraints) {
-                      final double anchoDisponible = constraints.crossAxisExtent;
+                      final double anchoDisponible =
+                          constraints.crossAxisExtent;
 
                       final int columnas = anchoDisponible >= 900
                           ? 3
@@ -289,7 +358,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             return const SizedBox(height: 16);
                           },
                           itemBuilder: (context, index) {
-                            final Solucion solucion = _solucionesFiltradas[index];
+                            final Solucion solucion =
+                                _solucionesFiltradas[index];
 
                             return SolucionCard(
                               solucion: solucion,
@@ -311,22 +381,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisSpacing: 16,
                           childAspectRatio: 0.94,
                         ),
-                        delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                            final Solucion solucion = _solucionesFiltradas[index];
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final Solucion solucion = _solucionesFiltradas[index];
 
-                            return SolucionCard(
-                              solucion: solucion,
-                              onTap: () {
-                                _abrirDetalle(solucion);
-                              },
-                              onSolicitar: () {
-                                _registrarSolicitud(solucion);
-                              },
-                            );
-                          },
-                          childCount: _solucionesFiltradas.length,
-                        ),
+                          return SolucionCard(
+                            solucion: solucion,
+                            onTap: () {
+                              _abrirDetalle(solucion);
+                            },
+                            onSolicitar: () {
+                              _registrarSolicitud(solucion);
+                            },
+                          );
+                        }, childCount: _solucionesFiltradas.length),
                       );
                     },
                   ),
@@ -353,9 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(
-              Icons.home_outlined,
-            ),
+            icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(
               Icons.home_rounded,
               color: AppColors.verdePrincipal,
@@ -363,9 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Inicio',
           ),
           NavigationDestination(
-            icon: Icon(
-              Icons.description_outlined,
-            ),
+            icon: Icon(Icons.description_outlined),
             selectedIcon: Icon(
               Icons.description_rounded,
               color: AppColors.verdePrincipal,
@@ -373,9 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Solicitudes',
           ),
           NavigationDestination(
-            icon: Icon(
-              Icons.person_outline_rounded,
-            ),
+            icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(
               Icons.person_rounded,
               color: AppColors.verdePrincipal,
@@ -410,10 +471,7 @@ class _AppBarTitle extends StatelessWidget {
           child: Text(
             'GenLi Conecta',
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
           ),
         ),
       ],
@@ -479,13 +537,13 @@ class _HomeHeader extends StatelessWidget {
                       suffixIcon: value.text.isEmpty
                           ? null
                           : IconButton(
-                        tooltip: 'Limpiar búsqueda',
-                        onPressed: onLimpiar,
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          color: AppColors.textoSecundario,
-                        ),
-                      ),
+                              tooltip: 'Limpiar búsqueda',
+                              onPressed: onLimpiar,
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: AppColors.textoSecundario,
+                              ),
+                            ),
                     ),
                   );
                 },
@@ -499,9 +557,7 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.cantidad,
-  });
+  const _SectionHeader({required this.cantidad});
 
   final int cantidad;
 
@@ -538,10 +594,7 @@ class _SectionHeader extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 11,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.verdeClaro,
                 borderRadius: BorderRadius.circular(30),
@@ -563,10 +616,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _EmptySearch extends StatelessWidget {
-  const _EmptySearch({
-    required this.busqueda,
-    required this.onLimpiar,
-  });
+  const _EmptySearch({required this.busqueda, required this.onLimpiar});
 
   final String busqueda;
   final VoidCallback onLimpiar;
@@ -620,16 +670,86 @@ class _EmptySearch extends StatelessWidget {
               onPressed: onLimpiar,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.verdePrincipal,
-                side: const BorderSide(
-                  color: AppColors.verdePrincipal,
-                ),
+                side: const BorderSide(color: AppColors.verdePrincipal),
               ),
-              icon: const Icon(
-                Icons.refresh_rounded,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Ver todas las soluciones'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CargandoCatalogo extends StatelessWidget {
+  const _CargandoCatalogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppColors.verdePrincipal),
+            SizedBox(height: 16),
+            Text(
+              'Cargando soluciones...',
+              style: TextStyle(color: AppColors.textoSecundario, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCatalogo extends StatelessWidget {
+  const _ErrorCatalogo({required this.onReintentar});
+
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 430),
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              color: AppColors.error,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No fue posible cargar las soluciones',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.verdeTexto,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
               ),
-              label: const Text(
-                'Ver todas las soluciones',
+            ),
+            const SizedBox(height: 9),
+            const Text(
+              'Revisa tu conexión a internet e inténtalo de nuevo.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textoSecundario,
+                fontSize: 14,
+                height: 1.4,
               ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onReintentar,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Reintentar'),
             ),
           ],
         ),

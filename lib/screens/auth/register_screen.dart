@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,6 +22,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _contrasenaController = TextEditingController();
 
   final TextEditingController _confirmacionController = TextEditingController();
+
+  final AuthService _authService = AuthService();
 
   bool _ocultarContrasena = true;
   bool _ocultarConfirmacion = true;
@@ -47,52 +50,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _cargando = true;
     });
 
-    // Simulación temporal del registro.
-    await Future.delayed(const Duration(milliseconds: 900));
+    try {
+      await _authService.registrarUsuario(
+        nombre: _nombreController.text,
+        organizacion: _organizacionController.text,
+        correo: _correoController.text,
+        contrasena: _contrasenaController.text,
+      );
 
-    if (!mounted) {
-      return;
-    }
+      // Firebase inicia sesión automáticamente después del registro.
+      // Cerramos esa sesión para conservar el flujo actual:
+      // crear cuenta → regresar al login → iniciar sesión.
+      await _authService.cerrarSesion();
 
-    setState(() {
-      _cargando = false;
-    });
+      if (!mounted) {
+        return;
+      }
 
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          icon: const Icon(
-            Icons.check_circle_rounded,
-            color: AppColors.verdePrincipal,
-            size: 52,
-          ),
-          title: const Text('Cuenta creada', textAlign: TextAlign.center),
-          content: Text(
-            'La cuenta de '
-            '${_nombreController.text.trim()} '
-            'fue creada correctamente en modo demostración.',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Continuar'),
+      setState(() {
+        _cargando = false;
+      });
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            icon: const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.verdePrincipal,
+              size: 52,
             ),
-          ],
-        );
-      },
-    );
+            title: const Text('Cuenta creada', textAlign: TextAlign.center),
+            content: Text(
+              'La cuenta de ${_nombreController.text.trim()} '
+              'fue creada correctamente.\n\n'
+              'Ahora puedes iniciar sesión con tu correo y contraseña.',
+              textAlign: TextAlign.center,
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('Continuar'),
+              ),
+            ],
+          );
+        },
+      );
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+    } on AuthServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cargando = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.mensaje)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cargando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ocurrió un error inesperado al crear la cuenta.'),
+        ),
+      );
     }
-
-    Navigator.pop(context);
   }
 
   @override

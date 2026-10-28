@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/routes.dart';
 import '../../app/theme.dart';
+import '../../models/usuario.dart';
 import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -41,42 +42,69 @@ class _LoginScreenState extends State<LoginScreen> {
       _cargando = true;
     });
 
-    final bool accesoPermitido = await _authService.iniciarSesion(
-      correo: _correoController.text,
-      contrasena: _contrasenaController.text,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _cargando = false;
-    });
-
-    if (!accesoPermitido) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Correo o contraseña incorrectos.')),
+    try {
+      final Usuario usuario = await _authService.iniciarSesion(
+        correo: _correoController.text,
+        contrasena: _contrasenaController.text,
       );
-      return;
-    }
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.home,
-      (route) => false,
-    );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cargando = false;
+      });
+
+      if (usuario.esAdministrador) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'El panel administrativo se implementará en Flutter Web.',
+            ),
+          ),
+        );
+
+        await _authService.cerrarSesion();
+        return;
+      }
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (route) => false,
+      );
+    } on AuthServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cargando = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.mensaje)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _cargando = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ocurrió un error inesperado al iniciar sesión.'),
+        ),
+      );
+    }
   }
 
   void _abrirRegistro() {
     Navigator.pushNamed(context, AppRoutes.register);
-  }
-
-  void _completarCredencialesDemo() {
-    _correoController.text = AuthService.correoDemo;
-    _contrasenaController.text = AuthService.contrasenaDemo;
-
-    FocusScope.of(context).unfocus();
   }
 
   @override
@@ -114,7 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           onIniciarSesion: _iniciarSesion,
                           onCrearCuenta: _abrirRegistro,
-                          onUsarCredencialesDemo: _completarCredencialesDemo,
                         ),
                         const SizedBox(height: 28),
                         const Center(
@@ -212,7 +239,6 @@ class _LoginForm extends StatelessWidget {
     required this.onCambiarVisibilidad,
     required this.onIniciarSesion,
     required this.onCrearCuenta,
-    required this.onUsarCredencialesDemo,
   });
 
   final GlobalKey<FormState> formKey;
@@ -226,7 +252,6 @@ class _LoginForm extends StatelessWidget {
   final VoidCallback onCambiarVisibilidad;
   final VoidCallback onIniciarSesion;
   final VoidCallback onCrearCuenta;
-  final VoidCallback onUsarCredencialesDemo;
 
   static String? _validarCorreo(String? value) {
     final String correo = value?.trim() ?? '';
@@ -345,46 +370,7 @@ class _LoginForm extends StatelessWidget {
               validator: _validarContrasena,
             ),
 
-            const SizedBox(height: 18),
-
-            // Botón para completar las credenciales de demostración.
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: cargando ? null : onUsarCredencialesDemo,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.verdePrincipal,
-                  side: const BorderSide(color: AppColors.verdePrincipal),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 11,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.person_outline_rounded, size: 18),
-                    SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Usar credenciales de demostración',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
 
             // Botón principal para iniciar sesión.
             SizedBox(
