@@ -46,7 +46,7 @@ class Solicitud {
   factory Solicitud.fromMap(String id, Map<String, dynamic> data) {
     final creacion = data['fechaCreacion'];
     final actualizacion = data['fechaActualizacion'];
-    
+
     return Solicitud(
       id: id,
       codigo: data['codigo'] as String? ?? '',
@@ -59,7 +59,9 @@ class Solicitud {
       estado: data['estado'] as String? ?? 'recibida',
       observacion: data['observacion'] as String? ?? '',
       fechaCreacion: creacion is Timestamp ? creacion.toDate() : DateTime.now(),
-      fechaActualizacion: actualizacion is Timestamp ? actualizacion.toDate() : DateTime.now(),
+      fechaActualizacion: actualizacion is Timestamp
+          ? actualizacion.toDate()
+          : DateTime.now(),
     );
   }
 }

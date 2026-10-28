@@ -5,33 +5,25 @@ import '../../models/solucion.dart';
 import '../../services/solicitud_service.dart'; // NUEVO IMPORT
 
 class SolicitudFormScreen extends StatefulWidget {
-  const SolicitudFormScreen({
-    super.key,
-    required this.solucion,
-  });
+  const SolicitudFormScreen({super.key, required this.solucion});
 
   final Solucion solucion;
 
   @override
-  State<SolicitudFormScreen> createState() =>
-      _SolicitudFormScreenState();
+  State<SolicitudFormScreen> createState() => _SolicitudFormScreenState();
 }
 
-class _SolicitudFormScreenState
-    extends State<SolicitudFormScreen> {
+class _SolicitudFormScreenState extends State<SolicitudFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  
+
   // NUEVO SERVICIO
   final SolicitudService _solicitudService = SolicitudService();
 
-  final TextEditingController _organizacionController =
-  TextEditingController();
+  final TextEditingController _organizacionController = TextEditingController();
 
-  final TextEditingController _ubicacionController =
-  TextEditingController();
+  final TextEditingController _ubicacionController = TextEditingController();
 
-  final TextEditingController _descripcionController =
-  TextEditingController();
+  final TextEditingController _descripcionController = TextEditingController();
 
   bool _cargando = false;
 
@@ -71,18 +63,17 @@ class _SolicitudFormScreenState
 
       // PASAMOS EL CÓDIGO REAL AL DIÁLOGO
       await _mostrarConfirmacion(solicitud.codigo);
-
     } on SolicitudServiceException catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
         _cargando = false;
       });
 
       // MOSTRAR ERROR EN PANTALLA
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.mensaje)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.mensaje)));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -181,10 +172,7 @@ class _SolicitudFormScreenState
       return;
     }
 
-    Navigator.popUntil(
-      context,
-      (route) => route.isFirst,
-    );
+    Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   Future<bool> _confirmarSalida() async {
@@ -203,13 +191,10 @@ class _SolicitudFormScreenState
             color: AppColors.amarillo,
             size: 44,
           ),
-          title: const Text(
-            'Descartar solicitud',
-            textAlign: TextAlign.center,
-          ),
+          title: const Text('Descartar solicitud', textAlign: TextAlign.center),
           content: const Text(
             'La información ingresada no se guardará. '
-                '¿Deseas regresar?',
+            '¿Deseas regresar?',
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.center,
@@ -261,10 +246,7 @@ class _SolicitudFormScreenState
                 Navigator.pop(context);
               }
             },
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 20,
-            ),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           ),
           title: const Text('Registrar solicitud'),
         ),
@@ -272,33 +254,20 @@ class _SolicitudFormScreenState
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
-              keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                22,
-                20,
-                36,
-              ),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 36),
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(
-                    maxWidth: 620,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 620),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SelectedSolutionCard(
-                        solucion: widget.solucion,
-                      ),
+                      _SelectedSolutionCard(solucion: widget.solucion),
                       const SizedBox(height: 22),
                       _FormCard(
-                        organizacionController:
-                        _organizacionController,
-                        ubicacionController:
-                        _ubicacionController,
-                        descripcionController:
-                        _descripcionController,
+                        organizacionController: _organizacionController,
+                        ubicacionController: _ubicacionController,
+                        descripcionController: _descripcionController,
                       ),
                       const SizedBox(height: 22),
                       const _InformationNotice(),
@@ -307,27 +276,20 @@ class _SolicitudFormScreenState
                         width: double.infinity,
                         height: 54,
                         child: FilledButton.icon(
-                          onPressed: _cargando
-                              ? null
-                              : _registrarSolicitud,
+                          onPressed: _cargando ? null : _registrarSolicitud,
                           icon: _cargando
                               ? const SizedBox.shrink()
-                              : const Icon(
-                            Icons.send_rounded,
-                          ),
+                              : const Icon(Icons.send_rounded),
                           label: _cargando
                               ? const SizedBox(
-                            width: 23,
-                            height: 23,
-                            child:
-                            CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: AppColors.blanco,
-                            ),
-                          )
-                              : const Text(
-                            'Registrar solicitud',
-                          ),
+                                  width: 23,
+                                  height: 23,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: AppColors.blanco,
+                                  ),
+                                )
+                              : const Text('Registrar solicitud'),
                         ),
                       ),
                     ],
@@ -343,9 +305,7 @@ class _SolicitudFormScreenState
 }
 
 class _SelectedSolutionCard extends StatelessWidget {
-  const _SelectedSolutionCard({
-    required this.solucion,
-  });
+  const _SelectedSolutionCard({required this.solucion});
 
   final Solucion solucion;
 
@@ -364,16 +324,10 @@ class _SelectedSolutionCard extends StatelessWidget {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: AppColors.blanco.withValues(
-                alpha: 0.15,
-              ),
+              color: AppColors.blanco.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              solucion.icono,
-              color: solucion.color,
-              size: 29,
-            ),
+            child: Icon(solucion.icono, color: solucion.color, size: 29),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -382,10 +336,7 @@ class _SelectedSolutionCard extends StatelessWidget {
               children: [
                 const Text(
                   'Línea seleccionada',
-                  style: TextStyle(
-                    color: Color(0xFFD7E8E0),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Color(0xFFD7E8E0), fontSize: 12),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -433,9 +384,7 @@ class _FormCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.blanco,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordeCampo,
-        ),
+        border: Border.all(color: AppColors.bordeCampo),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,8 +421,7 @@ class _FormCard extends StatelessWidget {
                 ),
               ),
               validator: (value) {
-                final String organizacion =
-                    value?.trim() ?? '';
+                final String organizacion = value?.trim() ?? '';
 
                 if (organizacion.isEmpty) {
                   return 'Ingresa la organización o comunidad';
@@ -495,16 +443,14 @@ class _FormCard extends StatelessWidget {
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                hintText:
-                'Municipio, corregimiento o dirección general',
+                hintText: 'Municipio, corregimiento o dirección general',
                 prefixIcon: Icon(
                   Icons.location_on_outlined,
                   color: Color(0xFF77857E),
                 ),
               ),
               validator: (value) {
-                final String ubicacion =
-                    value?.trim() ?? '';
+                final String ubicacion = value?.trim() ?? '';
 
                 if (ubicacion.isEmpty) {
                   return 'Ingresa la ubicación';
@@ -523,21 +469,19 @@ class _FormCard extends StatelessWidget {
             label: 'DESCRIPCIÓN DE LA NECESIDAD',
             child: TextFormField(
               controller: descripcionController,
-              textCapitalization:
-              TextCapitalization.sentences,
+              textCapitalization: TextCapitalization.sentences,
               keyboardType: TextInputType.multiline,
               minLines: 5,
               maxLines: 8,
               maxLength: 500,
               decoration: const InputDecoration(
                 hintText:
-                'Describe la situación, los beneficiarios '
+                    'Describe la situación, los beneficiarios '
                     'y la solución que necesitas...',
                 alignLabelWithHint: true,
               ),
               validator: (value) {
-                final String descripcion =
-                    value?.trim() ?? '';
+                final String descripcion = value?.trim() ?? '';
 
                 if (descripcion.isEmpty) {
                   return 'Describe la necesidad';
@@ -558,10 +502,7 @@ class _FormCard extends StatelessWidget {
 }
 
 class _FormField extends StatelessWidget {
-  const _FormField({
-    required this.label,
-    required this.child,
-  });
+  const _FormField({required this.label, required this.child});
 
   final String label;
   final Widget child;
@@ -602,16 +543,13 @@ class _InformationNotice extends StatelessWidget {
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: AppColors.verdePrincipal,
-          ),
+          Icon(Icons.info_outline_rounded, color: AppColors.verdePrincipal),
           SizedBox(width: 12),
           Expanded(
             child: Text(
               'Al registrar la solicitud, el sistema generará '
-                  'un código de seguimiento y asignará el estado '
-                  'inicial “Recibida”.',
+              'un código de seguimiento y asignará el estado '
+              'inicial “Recibida”.',
               style: TextStyle(
                 color: AppColors.verdeTexto,
                 fontSize: 13,

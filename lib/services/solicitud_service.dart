@@ -6,8 +6,8 @@ import '../models/solucion.dart';
 
 class SolicitudService {
   SolicitudService([FirebaseFirestore? firestore, FirebaseAuth? auth])
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
