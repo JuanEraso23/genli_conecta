@@ -178,6 +178,76 @@ class AuthService {
     return Usuario.fromMap(id: documento.id, data: datos);
   }
 
+  Future<Usuario> actualizarPerfilActual({
+    required String nombre,
+    required String organizacion,
+  }) async {
+    final firebase_auth.User? usuarioFirebase = _firebaseAuth.currentUser;
+
+    if (usuarioFirebase == null) {
+      throw const AuthServiceException(
+        'Debes iniciar sesión para actualizar el perfil.',
+      );
+    }
+
+    final String nombreNormalizado = nombre.trim();
+    final String organizacionNormalizada = organizacion.trim();
+
+    if (nombreNormalizado.length < 3) {
+      throw const AuthServiceException(
+        'El nombre debe tener al menos 3 caracteres.',
+      );
+    }
+
+    if (organizacionNormalizada.length < 3) {
+      throw const AuthServiceException(
+        'La organización debe tener al menos 3 caracteres.',
+      );
+    }
+
+    try {
+      final DocumentReference<Map<String, dynamic>> referencia = _firestore
+          .collection(_coleccionUsuarios)
+          .doc(usuarioFirebase.uid);
+
+      final DocumentSnapshot<Map<String, dynamic>> documento = await referencia
+          .get();
+
+      final Map<String, dynamic>? datos = documento.data();
+
+      if (!documento.exists || datos == null) {
+        throw const AuthServiceException(
+          'No fue posible encontrar el perfil del usuario.',
+        );
+      }
+
+      await referencia.update({
+        'nombre': nombreNormalizado,
+        'organizacion': organizacionNormalizada,
+      });
+
+      await usuarioFirebase.updateDisplayName(nombreNormalizado);
+
+      final Map<String, dynamic> datosActualizados = {
+        ...datos,
+        'nombre': nombreNormalizado,
+        'organizacion': organizacionNormalizada,
+      };
+
+      return Usuario.fromMap(id: documento.id, data: datosActualizados);
+    } on firebase_auth.FirebaseAuthException catch (error) {
+      throw AuthServiceException(_mensajeErrorFirebase(error.code));
+    } on FirebaseException {
+      throw const AuthServiceException('No fue posible actualizar el perfil.');
+    } on AuthServiceException {
+      rethrow;
+    } catch (_) {
+      throw const AuthServiceException(
+        'Ocurrió un error inesperado al actualizar el perfil.',
+      );
+    }
+  }
+
   Future<void> enviarCorreoRecuperacion({required String correo}) async {
     final String correoNormalizado = correo.trim().toLowerCase();
 
