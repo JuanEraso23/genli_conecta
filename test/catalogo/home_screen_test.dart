@@ -48,11 +48,11 @@ void main() {
     await tester.pump();
 
     await tester.enterText(find.byType(TextField), 'agua');
-    await tester.pump();
+    await tester.pump(retardoBusqueda);
     expect(find.text('1 resultados'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'zzzz');
-    await tester.pump();
+    await tester.pump(retardoBusqueda);
     expect(find.text('No encontramos resultados'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Limpiar búsqueda'));
@@ -68,5 +68,105 @@ void main() {
 
     expect(find.text('No fue posible cargar las soluciones'), findsOneWidget);
     expect(find.text('Reintentar'), findsOneWidget);
+  });
+
+  group('debounce de la búsqueda', () {
+    testWidgets('no filtra mientras se escribe y sí al terminar la pausa', (
+      tester,
+    ) async {
+      final servicio = await _montarHome(tester);
+      servicio.controller.add(MockData.soluciones);
+      await tester.pump();
+
+      for (final String parcial in ['a', 'ag', 'agu', 'agua']) {
+        await tester.enterText(find.byType(TextField), parcial);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      // Aún dentro de la pausa: sigue mostrando todas.
+      expect(find.text('5 resultados'), findsOneWidget);
+
+      await tester.pump(retardoBusqueda);
+      expect(find.text('1 resultados'), findsOneWidget);
+    });
+
+    testWidgets('cancela la ejecución anterior', (tester) async {
+      final servicio = await _montarHome(tester);
+      servicio.controller.add(MockData.soluciones);
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), 'agua');
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.enterText(find.byType(TextField), 'zzzz');
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Si el primer Timer no se cancelara, aquí ya habría 1 resultado.
+      expect(find.text('5 resultados'), findsOneWidget);
+      expect(find.text('1 resultados'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('No encontramos resultados'), findsOneWidget);
+    });
+
+    testWidgets('limpiar recupera todas las soluciones de inmediato', (
+      tester,
+    ) async {
+      final servicio = await _montarHome(tester);
+      servicio.controller.add(MockData.soluciones);
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), 'agua');
+      await tester.pump(retardoBusqueda);
+      expect(find.text('1 resultados'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Limpiar búsqueda'));
+      await tester.pump();
+      expect(find.text('5 resultados'), findsOneWidget);
+    });
+
+    testWidgets('busca por nombre, categoría y descripción', (tester) async {
+      final servicio = await _montarHome(tester);
+      servicio.controller.add(MockData.soluciones);
+      await tester.pump();
+
+      final Map<String, String> consultas = {
+        'nombre': MockData.soluciones.first.nombre,
+        'categoría': MockData.soluciones[1].categoria,
+        'descripción': MockData.soluciones[2].descripcion.split(' ').last,
+      };
+
+      for (final MapEntry<String, String> consulta in consultas.entries) {
+        final int esperados = filtrarSoluciones(
+          MockData.soluciones,
+          consulta.value,
+        ).length;
+
+        await tester.enterText(find.byType(TextField), consulta.value);
+        await tester.pump(retardoBusqueda);
+
+        expect(esperados, greaterThan(0), reason: consulta.key);
+        expect(
+          find.text('$esperados resultados'),
+          findsOneWidget,
+          reason: 'búsqueda por ${consulta.key}',
+        );
+      }
+    });
+
+    testWidgets('cerrar la pantalla antes de la pausa no lanza errores', (
+      tester,
+    ) async {
+      final servicio = await _montarHome(tester);
+      servicio.controller.add(MockData.soluciones);
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), 'agua');
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }
