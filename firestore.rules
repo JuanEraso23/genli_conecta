@@ -1,0 +1,174 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    function perfilActual() {
+      return get(
+        /databases/$(database)/documents/usuarios/$(request.auth.uid)
+      );
+    }
+
+    function esAdministrador() {
+      return estaAutenticado()
+          && perfilActual().data.rol == 'administrador'
+          && perfilActual().data.activo == true;
+    }
+
+    function esPropietario(uid) {
+      return estaAutenticado()
+          && request.auth.uid == uid;
+    }
+
+    function esEstadoValido(estado) {
+      return estado in [
+        'recibida',
+        'en_revision',
+        'aprobada',
+        'rechazada',
+        'cerrada'
+      ];
+    }
+
+    // =====================================================
+    // USUARIOS
+    // =====================================================
+
+    match /usuarios/{uid} {
+
+      // Cada usuario consulta su propio perfil.
+      // Los administradores pueden consultar perfiles.
+      allow read: if esPropietario(uid) || esAdministrador();
+
+      // El registro público solo puede crear el perfil propio
+      // con rol solicitante y estado activo.
+      allow create: if esPropietario(uid)
+          && request.resource.data.keys().hasAll([
+            'nombre',
+            'correo',
+            'organizacion',
+            'rol',
+            'activo',
+            'fechaRegistro'
+          ])
+          && request.resource.data.rol == 'solicitante'
+          && request.resource.data.activo == true;
+
+      // El usuario solo puede editar nombre y organización.
+      // No puede cambiar correo, rol, activo o fechaRegistro.
+      allow update: if esPropietario(uid)
+          && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'nombre',
+                'organizacion'
+              ]);
+
+      allow delete: if false;
+    }
+
+    // =====================================================
+    // SOLUCIONES
+    // =====================================================
+
+    match /soluciones/{solucionId} {
+
+      // El solicitante solo puede consultar soluciones publicadas.
+      // El administrador puede consultar todas.
+      allow read: if estaAutenticado()
+          && (
+            resource.data.publicada == true
+            || esAdministrador()
+          );
+
+      // Solo administradores gestionan el catálogo.
+      allow create: if esAdministrador()
+          && request.resource.data.keys().hasAll([
+            'nombre',
+            'descripcion',
+            'categoria',
+            'iconoNombre',
+            'colorHex',
+            'publicada',
+            'fechaCreacion',
+            'fechaActualizacion'
+          ]);
+
+      allow update: if esAdministrador()
+          && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'nombre',
+                'descripcion',
+                'categoria',
+                'iconoNombre',
+                'colorHex',
+                'publicada',
+                'fechaActualizacion'
+              ]);
+
+      allow delete: if false;
+    }
+
+    // =====================================================
+    // SOLICITUDES
+    // =====================================================
+
+    match /solicitudes/{solicitudId} {
+
+      // El solicitante solo consulta sus propias solicitudes.
+      // El administrador puede consultar todas.
+      allow read: if estaAutenticado()
+          && (
+            resource.data.usuarioId == request.auth.uid
+            || esAdministrador()
+          );
+
+      // El solicitante crea solicitudes únicamente para su UID.
+      // El estado inicial debe ser recibida y la observación vacía.
+      allow create: if estaAutenticado()
+          && request.resource.data.keys().hasAll([
+            'codigo',
+            'usuarioId',
+            'solucionId',
+            'solucionNombre',
+            'organizacion',
+            'ubicacion',
+            'descripcion',
+            'estado',
+            'observacion',
+            'fechaCreacion',
+            'fechaActualizacion'
+          ])
+          && request.resource.data.usuarioId == request.auth.uid
+          && request.resource.data.estado == 'recibida'
+          && request.resource.data.observacion == '';
+
+      // Solo el administrador cambia estado y observación.
+      // Los demás datos de la solicitud quedan protegidos.
+      allow update: if esAdministrador()
+          && esEstadoValido(request.resource.data.estado)
+          && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                'estado',
+                'observacion',
+                'fechaActualizacion'
+              ]);
+
+      allow delete: if false;
+    }
+
+    // Todo documento o colección no declarada queda bloqueado.
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}
