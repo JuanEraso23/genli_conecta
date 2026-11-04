@@ -5,6 +5,15 @@ import '../models/solicitud.dart';
 import '../models/solucion.dart';
 
 class SolicitudService {
+  // Lista de estados permitidos (HU-19)
+  static const estadosPermitidos = <String>{
+    'recibida',
+    'en_revision',
+    'aprobada',
+    'rechazada',
+    'cerrada',
+  };
+
   SolicitudService({FirebaseFirestore? firestore, FirebaseAuth? auth})
     : _firestorePersonalizado = firestore,
       _authPersonalizado = auth;
@@ -20,6 +29,7 @@ class SolicitudService {
     return _authPersonalizado ?? FirebaseAuth.instance;
   }
 
+  // HU-09 / HU-10: Registrar solicitud (TU CÓDIGO ORIGINAL)
   Future<Solicitud> crearSolicitud({
     required Solucion solucion,
     required String organizacion,
@@ -59,6 +69,52 @@ class SolicitudService {
         'No fue posible registrar la solicitud.',
       );
     }
+  }
+
+  // ==========================================
+  // MÓDULO ADMINISTRATIVO (HU-17 a HU-20)
+  // ==========================================
+
+  // HU-17: Consultar todas las solicitudes
+  Stream<List<Solicitud>> observarTodasLasSolicitudes() {
+    return _firestore.collection('solicitudes').snapshots().map((snapshot) {
+      final solicitudes = snapshot.docs
+          .map((doc) => Solicitud.fromMap(doc.id, doc.data()))
+          .toList();
+
+      // Ordenar desde la más reciente
+      solicitudes.sort(
+        (a, b) => b.fechaCreacion.compareTo(a.fechaCreacion),
+      );
+
+      return solicitudes;
+    });
+  }
+
+  // HU-19: Actualizar estado
+  Future<void> actualizarEstado({
+    required String id,
+    required String estado,
+  }) async {
+    if (!estadosPermitidos.contains(estado)) {
+      throw const SolicitudServiceException('Estado no válido.');
+    }
+    
+    await _firestore.collection('solicitudes').doc(id).update({
+      'estado': estado,
+      'fechaActualizacion': Timestamp.now(),
+    });
+  }
+
+  // HU-20: Registrar observación
+  Future<void> registrarObservacion({
+    required String id,
+    required String observacion,
+  }) async {
+    await _firestore.collection('solicitudes').doc(id).update({
+      'observacion': observacion.trim(),
+      'fechaActualizacion': Timestamp.now(),
+    });
   }
 }
 

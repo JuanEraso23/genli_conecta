@@ -8,6 +8,7 @@ import '../../models/solucion.dart';
 import '../../widgets/solucion_card.dart';
 import '../soluciones/solucion_detail_screen.dart';
 import '../solicitudes/solicitud_form_screen.dart';
+import '../admin/solicitudes/admin_solicitudes_screen.dart'; // NUEVO IMPORT
 import '../../services/auth_service.dart';
 import '../../services/solucion_service.dart';
 
@@ -119,6 +120,16 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) {
           return SolicitudFormScreen(solucion: solucion);
         },
+      ),
+    );
+  }
+
+  // NUEVO MÉTODO PARA ADMINISTRACIÓN
+  void _abrirAdminSolicitudes() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AdminSolicitudesScreen(),
       ),
     );
   }
@@ -236,6 +247,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 case 'solicitudes':
                   _mostrarSolicitudes();
                   break;
+                case 'admin': // NUEVO
+                  _abrirAdminSolicitudes(); // NUEVO
+                  break; // NUEVO
                 case 'perfil':
                   _mostrarPerfil();
                   break;
@@ -259,6 +273,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+                PopupMenuItem<String>( // NUEVO
+                  value: 'admin', // NUEVO
+                  child: Row( // NUEVO
+                    children: [ // NUEVO
+                      Icon( // NUEVO
+                        Icons.admin_panel_settings_outlined, // NUEVO
+                        color: AppColors.verdePrincipal, // NUEVO
+                      ), // NUEVO
+                      SizedBox(width: 12), // NUEVO
+                      Text('Administración'), // NUEVO
+                    ], // NUEVO
+                  ), // NUEVO
+                ), // NUEVO
                 PopupMenuItem<String>(
                   value: 'perfil',
                   child: Row(
