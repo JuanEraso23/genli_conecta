@@ -128,18 +128,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _abrirAdminSolicitudes() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AdminSolicitudesScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const AdminSolicitudesScreen()),
     );
   }
 
   void _mostrarPerfil() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('La pantalla de perfil se agregará posteriormente.'),
-      ),
-    );
+    Navigator.pushNamed(context, AppRoutes.profile);
   }
 
   void _mostrarSolicitudes() {
@@ -273,11 +267,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                PopupMenuItem<String>( // NUEVO
+                PopupMenuItem<String>(
+                  // NUEVO
                   value: 'admin', // NUEVO
-                  child: Row( // NUEVO
-                    children: [ // NUEVO
-                      Icon( // NUEVO
+                  child: Row(
+                    // NUEVO
+                    children: [
+                      // NUEVO
+                      Icon(
+                        // NUEVO
                         Icons.admin_panel_settings_outlined, // NUEVO
                         color: AppColors.verdePrincipal, // NUEVO
                       ), // NUEVO
