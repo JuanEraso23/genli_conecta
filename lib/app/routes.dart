@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../screens/auth/login_screen.dart';
+import '../screens/auth/password_recovery_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home/home_screen.dart';
 
 abstract final class AppRoutes {
   static const String login = '/login';
+  static const String passwordRecovery = '/password-recovery';
   static const String register = '/register';
   static const String home = '/home';
 
@@ -19,6 +22,12 @@ abstract final class AppRoutes {
       case register:
         return MaterialPageRoute(
           builder: (_) => const RegisterScreen(),
+          settings: settings,
+        );
+
+      case passwordRecovery:
+        return MaterialPageRoute(
+          builder: (_) => const PasswordRecoveryScreen(),
           settings: settings,
         );
 

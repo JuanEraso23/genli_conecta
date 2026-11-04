@@ -178,12 +178,32 @@ class AuthService {
     return Usuario.fromMap(id: documento.id, data: datos);
   }
 
+  Future<void> enviarCorreoRecuperacion({required String correo}) async {
+    final String correoNormalizado = correo.trim().toLowerCase();
+
+    if (correoNormalizado.isEmpty) {
+      throw const AuthServiceException('Ingresa tu correo electrónico.');
+    }
+
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: correoNormalizado);
+    } on firebase_auth.FirebaseAuthException catch (error) {
+      throw AuthServiceException(_mensajeErrorFirebase(error.code));
+    } catch (_) {
+      throw const AuthServiceException(
+        'Ocurrió un error inesperado al enviar el correo.',
+      );
+    }
+  }
+
   Future<void> cerrarSesion() async {
     await _firebaseAuth.signOut();
   }
 
   static String _mensajeErrorFirebase(String codigo) {
     switch (codigo) {
+      case 'missing-email':
+        return 'Ingresa tu correo electrónico.';
       case 'email-already-in-use':
         return 'Ya existe una cuenta con este correo.';
       case 'invalid-email':
@@ -193,12 +213,13 @@ class AuthService {
       case 'user-disabled':
         return 'Esta cuenta se encuentra deshabilitada.';
       case 'user-not-found':
+        return 'No existe una cuenta registrada con este correo.';
       case 'wrong-password':
       case 'invalid-credential':
         return 'Correo o contraseña incorrectos.';
       case 'too-many-requests':
         return 'Se realizaron demasiados intentos. '
-            'Inténtalo más tarde.';
+            'Inténtalo nuevamente más tarde.';
       case 'network-request-failed':
         return 'No fue posible conectarse. '
             'Revisa tu conexión a internet.';

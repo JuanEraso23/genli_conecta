@@ -107,6 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pushNamed(context, AppRoutes.register);
   }
 
+  void _abrirRecuperacion() {
+    Navigator.pushNamed(context, AppRoutes.passwordRecovery);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             });
                           },
                           onIniciarSesion: _iniciarSesion,
+                          onRecuperarAcceso: _abrirRecuperacion,
                           onCrearCuenta: _abrirRegistro,
                         ),
                         const SizedBox(height: 28),
@@ -238,6 +243,7 @@ class _LoginForm extends StatelessWidget {
     required this.cargando,
     required this.onCambiarVisibilidad,
     required this.onIniciarSesion,
+    required this.onRecuperarAcceso,
     required this.onCrearCuenta,
   });
 
@@ -251,6 +257,7 @@ class _LoginForm extends StatelessWidget {
 
   final VoidCallback onCambiarVisibilidad;
   final VoidCallback onIniciarSesion;
+  final VoidCallback onRecuperarAcceso;
   final VoidCallback onCrearCuenta;
 
   static String? _validarCorreo(String? value) {
@@ -369,9 +376,25 @@ class _LoginForm extends StatelessWidget {
               ),
               validator: _validarContrasena,
             ),
-
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: cargando ? null : onRecuperarAcceso,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.verdePrincipal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  '¿Olvidaste tu contraseña?',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
-
             // Botón principal para iniciar sesión.
             SizedBox(
               width: double.infinity,
