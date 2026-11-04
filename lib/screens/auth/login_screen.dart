@@ -58,15 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (usuario.esAdministrador) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'El panel administrativo se implementará en Flutter Web.',
-            ),
-          ),
+          const SnackBar(content: Text('Sesión administrativa iniciada.')),
         );
-
-        await _authService.cerrarSesion();
-        return;
       }
 
       Navigator.pushNamedAndRemoveUntil(

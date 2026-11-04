@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import '../../app/routes.dart';
 import '../../app/theme.dart';
 import '../../models/solucion.dart';
+import '../../models/usuario.dart';
 import '../../widgets/solucion_card.dart';
 import '../soluciones/solucion_detail_screen.dart';
 import '../solicitudes/solicitud_form_screen.dart';
-import '../admin/solicitudes/admin_solicitudes_screen.dart'; // NUEVO IMPORT
+import '../admin/solicitudes/admin_solicitudes_screen.dart';
 import '../../services/auth_service.dart';
 import '../../services/solucion_service.dart';
 
@@ -34,10 +35,42 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _cargando = true;
   bool _hayError = false;
 
+  Usuario? _perfilActual;
+  bool _cargandoPerfil = true;
+
+  bool get _esAdministrador {
+    return _perfilActual?.esAdministrador ?? false;
+  }
+
   @override
   void initState() {
     super.initState();
     _escucharSoluciones();
+    _cargarPerfilActual();
+  }
+
+  Future<void> _cargarPerfilActual() async {
+    try {
+      final Usuario? perfil = await _authService.obtenerPerfilActual();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _perfilActual = perfil;
+        _cargandoPerfil = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _perfilActual = null;
+        _cargandoPerfil = false;
+      });
+    }
   }
 
   @override
@@ -124,11 +157,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // NUEVO MÉTODO PARA ADMINISTRACIÓN
-  void _abrirAdminSolicitudes() {
-    Navigator.push(
+  Future<void> _abrirAdminSolicitudes() async {
+    if (_cargandoPerfil) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera mientras verificamos los permisos.'),
+        ),
+      );
+
+      return;
+    }
+
+    if (!_esAdministrador) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tienes permisos para acceder a la administración.'),
+        ),
+      );
+
+      return;
+    }
+
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AdminSolicitudesScreen()),
+      MaterialPageRoute<void>(builder: (_) => const AdminSolicitudesScreen()),
     );
   }
 
@@ -241,9 +293,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 case 'solicitudes':
                   _mostrarSolicitudes();
                   break;
-                case 'admin': // NUEVO
-                  _abrirAdminSolicitudes(); // NUEVO
-                  break; // NUEVO
+                case 'admin':
+                  _abrirAdminSolicitudes();
+                  break;
                 case 'perfil':
                   _mostrarPerfil();
                   break;
@@ -253,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             itemBuilder: (context) {
-              return const [
+              return [
                 PopupMenuItem<String>(
                   value: 'solicitudes',
                   child: Row(
@@ -267,23 +319,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                PopupMenuItem<String>(
-                  // NUEVO
-                  value: 'admin', // NUEVO
-                  child: Row(
-                    // NUEVO
-                    children: [
-                      // NUEVO
-                      Icon(
-                        // NUEVO
-                        Icons.admin_panel_settings_outlined, // NUEVO
-                        color: AppColors.verdePrincipal, // NUEVO
-                      ), // NUEVO
-                      SizedBox(width: 12), // NUEVO
-                      Text('Administración'), // NUEVO
-                    ], // NUEVO
-                  ), // NUEVO
-                ), // NUEVO
+                if (_esAdministrador)
+                  const PopupMenuItem<String>(
+                    value: 'admin',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.admin_panel_settings_outlined,
+                          color: AppColors.verdePrincipal,
+                        ),
+                        SizedBox(width: 12),
+                        Text('Administración'),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem<String>(
                   value: 'perfil',
                   child: Row(
