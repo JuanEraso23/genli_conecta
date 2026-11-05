@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../../app/theme.dart';
 import '../../../models/solicitud.dart';
 import '../../../services/solicitud_service.dart';
+import '../../../widgets/estado_chip.dart';
 
 class AdminSolicitudDetailScreen extends StatefulWidget {
   const AdminSolicitudDetailScreen({super.key, required this.solicitud});
@@ -9,13 +11,15 @@ class AdminSolicitudDetailScreen extends StatefulWidget {
   final Solicitud solicitud;
 
   @override
-  State<AdminSolicitudDetailScreen> createState() => _AdminSolicitudDetailScreenState();
+  State<AdminSolicitudDetailScreen> createState() =>
+      _AdminSolicitudDetailScreenState();
 }
 
-class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen> {
+class _AdminSolicitudDetailScreenState
+    extends State<AdminSolicitudDetailScreen> {
   final SolicitudService _solicitudService = SolicitudService();
   final TextEditingController _observacionController = TextEditingController();
-  
+
   late String _estadoSeleccionado;
   bool _guardandoEstado = false;
   bool _guardandoObservacion = false;
@@ -40,10 +44,18 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar cambio de estado'),
-        content: Text('¿Cambiar de "${widget.solicitud.estado}" a "$_estadoSeleccionado"?'),
+        content: Text(
+          '¿Cambiar de "${widget.solicitud.estado}" a "$_estadoSeleccionado"?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirmar'),
+          ),
         ],
       ),
     );
@@ -57,12 +69,16 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
         estado: _estadoSeleccionado,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Estado actualizado')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Estado actualizado')));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _guardandoEstado = false);
@@ -72,7 +88,9 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
   Future<void> _guardarObservacion() async {
     final texto = _observacionController.text.trim();
     if (texto.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La observación no puede estar vacía')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La observación no puede estar vacía')),
+      );
       return;
     }
     if (texto == widget.solicitud.observacion) return;
@@ -84,11 +102,15 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
         observacion: texto,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Observación guardada')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Observación guardada')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _guardandoObservacion = false);
@@ -111,12 +133,21 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Solución: ${widget.solicitud.solucionNombre}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      'Solución: ${widget.solicitud.solucionNombre}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text('Organización: ${widget.solicitud.organizacion}'),
                     Text('Ubicación: ${widget.solicitud.ubicacion}'),
                     const SizedBox(height: 8),
-                    const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Descripción:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     Text(widget.solicitud.descripcion),
                   ],
                 ),
@@ -130,22 +161,37 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Gestión de Estado', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text(
+                      'Gestión de Estado',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: _estadoSeleccionado,
-                      decoration: const InputDecoration(labelText: 'Estado actual', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Estado actual',
+                        border: OutlineInputBorder(),
+                      ),
                       items: SolicitudService.estadosPermitidos.map((estado) {
-                        return DropdownMenuItem(value: estado, child: Text(estado));
+                        return DropdownMenuItem(
+                          value: estado,
+                          child: Text(EstadoChip.etiquetaDe(estado)),
+                        );
                       }).toList(),
-                      onChanged: (val) => setState(() => _estadoSeleccionado = val!),
+                      onChanged: (val) =>
+                          setState(() => _estadoSeleccionado = val!),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
                         onPressed: _guardandoEstado ? null : _actualizarEstado,
-                        child: _guardandoEstado ? const CircularProgressIndicator() : const Text('Guardar estado'),
+                        child: _guardandoEstado
+                            ? const CircularProgressIndicator()
+                            : const Text('Guardar estado'),
                       ),
                     ),
                   ],
@@ -160,14 +206,21 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Observaciones', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text(
+                      'Observaciones',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _observacionController,
                       maxLines: 4,
                       maxLength: 500,
                       decoration: const InputDecoration(
-                        hintText: 'Escribe una observación visible para el solicitante...',
+                        hintText:
+                            'Escribe una observación visible para el solicitante...',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -175,8 +228,12 @@ class _AdminSolicitudDetailScreenState extends State<AdminSolicitudDetailScreen>
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: _guardandoObservacion ? null : _guardarObservacion,
-                        child: _guardandoObservacion ? const CircularProgressIndicator() : const Text('Guardar observación'),
+                        onPressed: _guardandoObservacion
+                            ? null
+                            : _guardarObservacion,
+                        child: _guardandoObservacion
+                            ? const CircularProgressIndicator()
+                            : const Text('Guardar observación'),
                       ),
                     ),
                   ],
