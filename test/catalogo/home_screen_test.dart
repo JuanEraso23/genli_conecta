@@ -13,6 +13,10 @@ class _FakeSolucionService implements SolucionService {
 
   @override
   Stream<List<Solucion>> observarSolucionesPublicadas() => controller.stream;
+
+  // Métodos de administración que HomeScreen no utiliza.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 Future<_FakeSolucionService> _montarHome(WidgetTester tester) async {
