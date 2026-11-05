@@ -15,20 +15,22 @@ class AdminSolicitudesScreen extends StatefulWidget {
 class _AdminSolicitudesScreenState extends State<AdminSolicitudesScreen> {
   final SolicitudService _solicitudService = SolicitudService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   String _filtroEstado = 'todos';
 
   List<Solicitud> _filtrarSolicitudes(List<Solicitud> solicitudes) {
     final texto = _searchController.text.trim().toLowerCase();
-    
+
     return solicitudes.where((solicitud) {
-      final coincideTexto = texto.isEmpty ||
+      final coincideTexto =
+          texto.isEmpty ||
           solicitud.codigo.toLowerCase().contains(texto) ||
           solicitud.solucionNombre.toLowerCase().contains(texto) ||
           solicitud.organizacion.toLowerCase().contains(texto) ||
           solicitud.ubicacion.toLowerCase().contains(texto);
 
-      final coincideEstado = _filtroEstado == 'todos' || solicitud.estado == _filtroEstado;
+      final coincideEstado =
+          _filtroEstado == 'todos' || solicitud.estado == _filtroEstado;
 
       return coincideTexto && coincideEstado;
     }).toList();
@@ -44,9 +46,7 @@ class _AdminSolicitudesScreenState extends State<AdminSolicitudesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.fondoClaro,
-      appBar: AppBar(
-        title: const Text('Administración de solicitudes'),
-      ),
+      appBar: AppBar(title: const Text('Administración de solicitudes')),
       body: StreamBuilder<List<Solicitud>>(
         stream: _solicitudService.observarTodasLasSolicitudes(),
         builder: (context, snapshot) {
@@ -76,65 +76,104 @@ class _AdminSolicitudesScreenState extends State<AdminSolicitudesScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Buscar por código, organización, ubicación...',
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: AppColors.blanco,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
+                padding: const EdgeInsets.all(16),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bool pantallaEstrecha = constraints.maxWidth < 600;
+
+                    final Widget buscador = TextField(
+                      controller: _searchController,
+                      onChanged: (_) {
+                        setState(() {});
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar por código, solución u organización',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        filled: true,
+                        fillColor: AppColors.blanco,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        onChanged: (value) => setState(() {}),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 1,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _filtroEstado,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: AppColors.blanco,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
+                    );
+
+                    final Widget filtro = DropdownButtonFormField<String>(
+                      initialValue: _filtroEstado,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: AppColors.blanco,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 'todos', child: Text('Todos los estados')),
-                          DropdownMenuItem(value: 'recibida', child: Text('Recibida')),
-                          DropdownMenuItem(value: 'en_revision', child: Text('En revisión')),
-                          DropdownMenuItem(value: 'aprobada', child: Text('Aprobada')),
-                          DropdownMenuItem(value: 'rechazada', child: Text('Rechazada')),
-                          DropdownMenuItem(value: 'cerrada', child: Text('Cerrada')),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'todos', child: Text('Todos')),
+                        DropdownMenuItem(
+                          value: 'recibida',
+                          child: Text('Recibida'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'en_revision',
+                          child: Text('En revisión'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'aprobada',
+                          child: Text('Aprobada'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'rechazada',
+                          child: Text('Rechazada'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'cerrada',
+                          child: Text('Cerrada'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+
+                        setState(() {
+                          _filtroEstado = value;
+                        });
+                      },
+                    );
+
+                    if (pantallaEstrecha) {
+                      return Column(
+                        children: [
+                          buscador,
+                          const SizedBox(height: 12),
+                          filtro,
                         ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filtroEstado = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(flex: 2, child: buscador),
+                        const SizedBox(width: 12),
+                        Expanded(child: filtro),
+                      ],
+                    );
+                  },
                 ),
               ),
-              
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Mostrando ${solicitudesFiltradas.length} de ${todasLasSolicitudes.length} solicitudes',
-                    style: const TextStyle(color: AppColors.textoSecundario, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: AppColors.textoSecundario,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -142,7 +181,11 @@ class _AdminSolicitudesScreenState extends State<AdminSolicitudesScreen> {
 
               Expanded(
                 child: solicitudesFiltradas.isEmpty
-                    ? const Center(child: Text('No se encontraron solicitudes con esos filtros.'))
+                    ? const Center(
+                        child: Text(
+                          'No se encontraron solicitudes con esos filtros.',
+                        ),
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: solicitudesFiltradas.length,
@@ -154,7 +197,10 @@ class _AdminSolicitudesScreenState extends State<AdminSolicitudesScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => AdminSolicitudDetailScreen(solicitud: solicitud),
+                                  builder: (context) =>
+                                      AdminSolicitudDetailScreen(
+                                        solicitud: solicitud,
+                                      ),
                                 ),
                               );
                             },
