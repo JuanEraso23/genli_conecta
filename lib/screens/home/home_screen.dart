@@ -7,11 +7,15 @@ import '../../app/theme.dart';
 import '../../models/solucion.dart';
 import '../../models/usuario.dart';
 import '../../widgets/solucion_card.dart';
+import '../solicitudes/solicitudes_screen.dart';
 import '../soluciones/solucion_detail_screen.dart';
 import '../solicitudes/solicitud_form_screen.dart';
 import '../admin/solicitudes/admin_solicitudes_screen.dart';
 import '../../services/auth_service.dart';
 import '../../services/solucion_service.dart';
+
+/// Tiempo que espera la búsqueda después de la última tecla antes de filtrar.
+const Duration retardoBusqueda = Duration(milliseconds: 350);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.solucionService});
@@ -30,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
       widget.solucionService ?? SolucionService();
 
   StreamSubscription<List<Solucion>>? _suscripcion;
+  Timer? _debounceBusqueda;
   List<Solucion> _soluciones = const [];
   List<Solucion> _solucionesFiltradas = const [];
   bool _cargando = true;
@@ -75,8 +80,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _suscripcion?.cancel();
+    _debounceBusqueda?.cancel();
     _busquedaController.dispose();
+    _suscripcion?.cancel();
     super.dispose();
   }
 
@@ -129,7 +135,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// Reinicia el temporizador en cada pulsación; solo filtra tras la pausa.
+  void _programarBusqueda(String texto) {
+    _debounceBusqueda?.cancel();
+    _debounceBusqueda = Timer(retardoBusqueda, () {
+      if (!mounted) return;
+      _filtrarSoluciones(texto);
+    });
+  }
+
   void _limpiarBusqueda() {
+    _debounceBusqueda?.cancel();
     _busquedaController.clear();
     _filtrarSoluciones('');
     FocusScope.of(context).unfocus();
@@ -189,12 +205,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _mostrarSolicitudes() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'El historial de solicitudes se agregará posteriormente.',
-        ),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const SolicitudesScreen()),
     );
   }
 
@@ -386,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: _HomeHeader(
                   busquedaController: _busquedaController,
-                  onBuscar: _filtrarSoluciones,
+                  onBuscar: _programarBusqueda,
                   onLimpiar: _limpiarBusqueda,
                 ),
               ),

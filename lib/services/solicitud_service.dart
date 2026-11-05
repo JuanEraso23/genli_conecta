@@ -71,6 +71,32 @@ class SolicitudService {
     }
   }
 
+  // HU-11: Consultar mis solicitudes.
+  // El filtro por usuarioId forma parte de la consulta a Firestore.
+  // Se ordena en Dart para no requerir un índice compuesto.
+  Stream<List<Solicitud>> observarMisSolicitudes() {
+    final usuario = _auth.currentUser;
+    if (usuario == null) {
+      return Stream.error(
+        const SolicitudServiceException('Debes iniciar sesión.'),
+      );
+    }
+
+    return _firestore
+        .collection('solicitudes')
+        .where('usuarioId', isEqualTo: usuario.uid)
+        .snapshots()
+        .map((snapshot) {
+          final solicitudes = snapshot.docs
+              .map((doc) => Solicitud.fromMap(doc.id, doc.data()))
+              .toList();
+          solicitudes.sort(
+            (a, b) => b.fechaCreacion.compareTo(a.fechaCreacion),
+          );
+          return solicitudes;
+        });
+  }
+
   // ==========================================
   // MÓDULO ADMINISTRATIVO (HU-17 a HU-20)
   // ==========================================
@@ -83,9 +109,7 @@ class SolicitudService {
           .toList();
 
       // Ordenar desde la más reciente
-      solicitudes.sort(
-        (a, b) => b.fechaCreacion.compareTo(a.fechaCreacion),
-      );
+      solicitudes.sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
 
       return solicitudes;
     });
@@ -99,7 +123,7 @@ class SolicitudService {
     if (!estadosPermitidos.contains(estado)) {
       throw const SolicitudServiceException('Estado no válido.');
     }
-    
+
     await _firestore.collection('solicitudes').doc(id).update({
       'estado': estado,
       'fechaActualizacion': Timestamp.now(),
