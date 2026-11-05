@@ -200,6 +200,121 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _abrirAdminCatalogo() async {
+    if (_cargandoPerfil) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera mientras verificamos los permisos.'),
+        ),
+      );
+
+      return;
+    }
+
+    if (!_esAdministrador) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tienes permisos para acceder a la administración.'),
+        ),
+      );
+
+      return;
+    }
+
+    await Navigator.pushNamed(context, AppRoutes.adminCatalogo);
+  }
+
+  Future<void> _mostrarAdministracion() async {
+    if (_cargandoPerfil) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Espera mientras verificamos los permisos.'),
+        ),
+      );
+
+      return;
+    }
+
+    if (!_esAdministrador) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tienes permisos para acceder a la administración.'),
+        ),
+      );
+
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Administración',
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.verdeTexto,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Selecciona el módulo que deseas gestionar.',
+                  style: TextStyle(color: AppColors.textoSecundario),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(
+                    Icons.description_outlined,
+                    color: AppColors.verdePrincipal,
+                  ),
+                  title: const Text('Solicitudes'),
+                  subtitle: const Text(
+                    'Consultar, filtrar y actualizar solicitudes.',
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _abrirAdminSolicitudes();
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(
+                    Icons.inventory_2_outlined,
+                    color: AppColors.verdePrincipal,
+                  ),
+                  title: const Text('Catálogo de soluciones'),
+                  subtitle: const Text(
+                    'Crear, editar, publicar o despublicar soluciones.',
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _abrirAdminCatalogo();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _mostrarPerfil() {
     Navigator.pushNamed(context, AppRoutes.profile);
   }
@@ -307,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _mostrarSolicitudes();
                   break;
                 case 'admin':
-                  _abrirAdminSolicitudes();
+                  _mostrarAdministracion();
                   break;
                 case 'perfil':
                   _mostrarPerfil();
