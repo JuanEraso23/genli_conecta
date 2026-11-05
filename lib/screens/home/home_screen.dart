@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../models/solucion.dart';
 import '../../models/usuario.dart';
 import '../../widgets/solucion_card.dart';
+import '../solicitudes/solicitudes_screen.dart';
 import '../soluciones/solucion_detail_screen.dart';
 import '../solicitudes/solicitud_form_screen.dart';
 import '../admin/solicitudes/admin_solicitudes_screen.dart';
@@ -204,12 +205,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _mostrarSolicitudes() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'El historial de solicitudes se agregará posteriormente.',
-        ),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const SolicitudesScreen()),
     );
   }
 
